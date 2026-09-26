@@ -1,0 +1,68 @@
+#if defined(ARDUINO) && defined(ESP8266)
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+// Substitua pelos dados da sua rede Wi-Fi
+const char* ssid = "Pitágoras";
+const char* password = "Lima1204.";
+// conectar
+// Cria o servidor na porta 80
+ESP8266WebServer server(80);
+
+// Pino do LED embutido (em muitas placas NodeMCU é o GPIO2 ou D4)
+const int ledPin = LED_BUILTIN; 
+
+void handleRoot() {
+  String html = "<HTML><HEAD><TITLE>ESP8266 Web Server</TITLE></HEAD>";
+  html += "<BODY style='text-align:center; font-family:Arial;'>";
+  html += "<H1>Controle de LED com ESP8266</H1>";
+  html += "<p>Clique nos botoes para controlar o LED:</p>";
+  html += "<a href=\"/on\"><button style='font-size:20px; padding:10px 20px;'>LIGAR</button></a>";
+  html += "&nbsp;&nbsp;";
+  html += "<a href=\"/off\"><button style='font-size:20px; padding:10px 20px;'>DESLIGAR</button></a>";
+  html += "</BODY></HTML>";
+  
+  server.send(200, "text/html", html);
+}
+
+void handleOn() {
+  digitalWrite(ledPin, LOW); // LED ligado (em algumas placas o nível é invertido)
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleOff() {
+  digitalWrite(ledPin, HIGH); // LED desligado
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, HIGH);
+
+  // Conecta ao Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.print("Conectado! IP do servidor: ");
+  Serial.println(WiFi.localIP());
+
+  // Rotas do site
+  server.on("/", handleRoot);
+  server.on("/on", handleOn);
+  server.on("/off", handleOff);
+
+  server.begin();
+  Serial.println("Servidor HTTP iniciado");
+}
+
+void loop() {
+  server.handleClient();
+}
+#endif
